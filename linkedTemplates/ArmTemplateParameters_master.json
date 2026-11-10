@@ -1,0 +1,54 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "factoryName": {
+            "value": "adf-azuredatalib-dev"
+        },
+        "LS_SQL_SERVER_password": {
+            "value": ""
+        },
+        "TRG_Storage_CSV_Arrival_properties_PL_Storage_Event_Demo_parameters_FileName": {
+            "value": "@triggerBody().fileName"
+        },
+        "TRG_Storage_CSV_Arrival_properties_PL_Storage_Event_Demo_parameters_FolderPath": {
+            "value": "@triggerBody().folderPath"
+        },
+        "TRG_Storage_CSV_Arrival_properties_typeProperties_scope": {
+            "value": "/subscriptions/89c38206-bb1d-483a-b4cd-f9cd5ab3976a/resourceGroups/rg-azuredatalib-dev/providers/Microsoft.Storage/storageAccounts/azurelibacademy1234"
+        },
+        "trigger_properties_pipeline_parameters_WindowStart": {
+            "value": "@trigger().outputs.windowStartTime"
+        },
+        "trigger_properties_pipeline_parameters_WindowEnd": {
+            "value": "@trigger().outputs.windowEndTime"
+        },
+        "TRG_Custom_Sales_Approved_properties_PL_Custom_event_Demo_parameters_dataApprovalID": {
+            "value": "@triggerBody().event.data.ApprovalID"
+        },
+        "TRG_Custom_Sales_Approved_properties_typeProperties_scope": {
+            "value": "/subscriptions/89c38206-bb1d-483a-b4cd-f9cd5ab3976a/resourceGroups/rg-azuredatalib-dev/providers/Microsoft.EventGrid/topics/eg-adf-training-events"
+        },
+        "LS_ADLS_TRANING_properties_typeProperties_url": {
+            "value": "https://azurelibacademy1234.dfs.core.windows.net/"
+        },
+        "LS_SQL_SERVER_properties_typeProperties_server": {
+            "value": "sqlserver-training-1.database.windows.net"
+        },
+        "LS_SQL_SERVER_properties_typeProperties_database": {
+            "value": "free-sql-db-4869014"
+        },
+        "LS_SQL_SERVER_properties_typeProperties_userName": {
+            "value": "adf-azuredatalib-dev"
+        },
+        "LS_REST_Training_properties_typeProperties_url": {
+            "value": "https://jsonplaceholder.typicode.com/"
+        },
+        "containerUri": {
+            "value": ""
+        },
+        "containerSasToken": {
+            "value": ""
+        }
+    }
+}

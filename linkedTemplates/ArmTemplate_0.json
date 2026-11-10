@@ -1,0 +1,976 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "factoryName": {
+            "type": "string",
+            "metadata": "Data Factory name",
+            "defaultValue": "adf-azuredatalib-dev"
+        },
+        "LS_SQL_SERVER_password": {
+            "type": "secureString",
+            "metadata": "Secure string for 'password' of 'LS_SQL_SERVER'"
+        },
+        "LS_ADLS_TRANING_properties_typeProperties_url": {
+            "type": "string",
+            "defaultValue": "https://azurelibacademy1234.dfs.core.windows.net/"
+        },
+        "LS_SQL_SERVER_properties_typeProperties_server": {
+            "type": "string",
+            "defaultValue": "sqlserver-training-1.database.windows.net"
+        },
+        "LS_SQL_SERVER_properties_typeProperties_database": {
+            "type": "string",
+            "defaultValue": "free-sql-db-4869014"
+        },
+        "LS_SQL_SERVER_properties_typeProperties_userName": {
+            "type": "string",
+            "defaultValue": "adf-azuredatalib-dev"
+        },
+        "LS_REST_Training_properties_typeProperties_url": {
+            "type": "string",
+            "defaultValue": "https://jsonplaceholder.typicode.com/"
+        },
+        "TRG_Storage_CSV_Arrival_properties_PL_Storage_Event_Demo_parameters_FileName": {
+            "type": "string",
+            "defaultValue": "@triggerBody().fileName"
+        },
+        "TRG_Storage_CSV_Arrival_properties_PL_Storage_Event_Demo_parameters_FolderPath": {
+            "type": "string",
+            "defaultValue": "@triggerBody().folderPath"
+        },
+        "TRG_Storage_CSV_Arrival_properties_typeProperties_scope": {
+            "type": "string",
+            "defaultValue": "/subscriptions/89c38206-bb1d-483a-b4cd-f9cd5ab3976a/resourceGroups/rg-azuredatalib-dev/providers/Microsoft.Storage/storageAccounts/azurelibacademy1234"
+        },
+        "trigger_properties_pipeline_parameters_WindowStart": {
+            "type": "string",
+            "defaultValue": "@trigger().outputs.windowStartTime"
+        },
+        "trigger_properties_pipeline_parameters_WindowEnd": {
+            "type": "string",
+            "defaultValue": "@trigger().outputs.windowEndTime"
+        },
+        "TRG_Custom_Sales_Approved_properties_PL_Custom_event_Demo_parameters_dataApprovalID": {
+            "type": "string",
+            "defaultValue": "@triggerBody().event.data.ApprovalID"
+        },
+        "TRG_Custom_Sales_Approved_properties_typeProperties_scope": {
+            "type": "string",
+            "defaultValue": "/subscriptions/89c38206-bb1d-483a-b4cd-f9cd5ab3976a/resourceGroups/rg-azuredatalib-dev/providers/Microsoft.EventGrid/topics/eg-adf-training-events"
+        }
+    },
+    "variables": {
+        "factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+    },
+    "resources": [
+        {
+            "name": "[concat(parameters('factoryName'), '/PL_TumblingWindow_Demo')]",
+            "type": "Microsoft.DataFactory/factories/pipelines",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "activities": [
+                    {
+                        "name": "Set_Window_Start",
+                        "type": "SetVariable",
+                        "dependsOn": [],
+                        "policy": {
+                            "secureOutput": false,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "variableName": "CurrentWindowStart",
+                            "value": {
+                                "value": "@pipeline().parameters.WindowStart",
+                                "type": "Expression"
+                            }
+                        }
+                    },
+                    {
+                        "name": "Set_Window_End",
+                        "type": "SetVariable",
+                        "dependsOn": [
+                            {
+                                "activity": "Set_Window_Start",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            }
+                        ],
+                        "policy": {
+                            "secureOutput": false,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "variableName": "CurrentWindowStart",
+                            "value": {
+                                "value": "@pipeline().parameters.WindowEnd",
+                                "type": "Expression"
+                            }
+                        }
+                    },
+                    {
+                        "name": "Process_Window_Demo",
+                        "type": "Wait",
+                        "dependsOn": [
+                            {
+                                "activity": "Set_Window_End",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            }
+                        ],
+                        "userProperties": [],
+                        "typeProperties": {
+                            "waitTimeInSeconds": 5
+                        }
+                    }
+                ],
+                "policy": {
+                    "elapsedTimeMetric": {}
+                },
+                "parameters": {
+                    "WindowStart": {
+                        "type": "string",
+                        "defaultValue": "@trigger().output.windowStartTime"
+                    },
+                    "WindowEnd": {
+                        "type": "string",
+                        "defaultValue": "@trigger().output.windowEndTime"
+                    }
+                },
+                "variables": {
+                    "CurrentWindowStart": {
+                        "type": "String"
+                    },
+                    "CurrentWindowend": {
+                        "type": "String"
+                    }
+                },
+                "annotations": [],
+                "lastPublishTime": "2026-10-27T16:40:20Z"
+            },
+            "dependsOn": []
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/PL_Storage_Event_Demo')]",
+            "type": "Microsoft.DataFactory/factories/pipelines",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "activities": [
+                    {
+                        "name": "Set_File_Name",
+                        "type": "SetVariable",
+                        "dependsOn": [],
+                        "policy": {
+                            "secureOutput": false,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "variableName": "UploadedFileName",
+                            "value": {
+                                "value": "@pipeline().parameters.FileName",
+                                "type": "Expression"
+                            }
+                        }
+                    },
+                    {
+                        "name": "Set_Folder_Path",
+                        "type": "SetVariable",
+                        "dependsOn": [
+                            {
+                                "activity": "Set_File_Name",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            }
+                        ],
+                        "policy": {
+                            "secureOutput": false,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "variableName": "UploadedFolderPath",
+                            "value": {
+                                "value": "@pipeline().parameters.FolderPath",
+                                "type": "Expression"
+                            }
+                        }
+                    },
+                    {
+                        "name": "Wait_For_Demo",
+                        "type": "Wait",
+                        "dependsOn": [
+                            {
+                                "activity": "Set_Folder_Path",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            }
+                        ],
+                        "userProperties": [],
+                        "typeProperties": {
+                            "waitTimeInSeconds": 5
+                        }
+                    }
+                ],
+                "policy": {
+                    "elapsedTimeMetric": {}
+                },
+                "parameters": {
+                    "FileName": {
+                        "type": "String"
+                    },
+                    "FolderPath": {
+                        "type": "String"
+                    }
+                },
+                "variables": {
+                    "UploadedFileName": {
+                        "type": "String"
+                    },
+                    "UploadedFolderPath": {
+                        "type": "String"
+                    }
+                },
+                "annotations": [],
+                "lastPublishTime": "2026-10-27T17:28:11Z"
+            },
+            "dependsOn": []
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/PL_Custom_event_Demo')]",
+            "type": "Microsoft.DataFactory/factories/pipelines",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "activities": [
+                    {
+                        "name": "Set_approval_ID",
+                        "type": "SetVariable",
+                        "dependsOn": [],
+                        "policy": {
+                            "secureOutput": false,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "variableName": "ReceivedApprovalID",
+                            "value": {
+                                "value": "@pipeline().parameters.dataApprovalID",
+                                "type": "Expression"
+                            }
+                        }
+                    }
+                ],
+                "policy": {
+                    "elapsedTimeMetric": {}
+                },
+                "parameters": {
+                    "dataApprovalID": {
+                        "type": "string"
+                    }
+                },
+                "variables": {
+                    "ReceivedApprovalID": {
+                        "type": "String"
+                    }
+                },
+                "annotations": [],
+                "lastPublishTime": "2026-10-28T16:17:51Z"
+            },
+            "dependsOn": []
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/PL_If_Condition_demo')]",
+            "type": "Microsoft.DataFactory/factories/pipelines",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "activities": [
+                    {
+                        "name": "Check_File_Type",
+                        "type": "IfCondition",
+                        "dependsOn": [],
+                        "userProperties": [],
+                        "typeProperties": {
+                            "expression": {
+                                "value": "@equals(pipeline().parameters.FileType, 'csv')",
+                                "type": "Expression"
+                            },
+                            "ifFalseActivities": [
+                                {
+                                    "name": "Invalid_File",
+                                    "type": "Wait",
+                                    "dependsOn": [],
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "waitTimeInSeconds": 2
+                                    }
+                                }
+                            ],
+                            "ifTrueActivities": [
+                                {
+                                    "name": "valid_csv",
+                                    "type": "Wait",
+                                    "dependsOn": [],
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "waitTimeInSeconds": 2
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                ],
+                "policy": {
+                    "elapsedTimeMetric": {}
+                },
+                "parameters": {
+                    "FileType": {
+                        "type": "string",
+                        "defaultValue": "csv"
+                    }
+                },
+                "annotations": [],
+                "lastPublishTime": "2026-11-02T15:50:32Z"
+            },
+            "dependsOn": []
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/PL_Switch_Demo')]",
+            "type": "Microsoft.DataFactory/factories/pipelines",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "activities": [
+                    {
+                        "name": "Check_Table_Name",
+                        "type": "Switch",
+                        "dependsOn": [],
+                        "userProperties": [],
+                        "typeProperties": {
+                            "on": {
+                                "value": "@pipeline().parameters.TableName",
+                                "type": "Expression"
+                            },
+                            "cases": [
+                                {
+                                    "value": "Customers",
+                                    "activities": [
+                                        {
+                                            "name": "Process_Customers",
+                                            "type": "Wait",
+                                            "dependsOn": [],
+                                            "userProperties": [],
+                                            "typeProperties": {
+                                                "waitTimeInSeconds": 2
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "value": "Employees",
+                                    "activities": [
+                                        {
+                                            "name": "Process_Employees",
+                                            "type": "Wait",
+                                            "dependsOn": [],
+                                            "userProperties": [],
+                                            "typeProperties": {
+                                                "waitTimeInSeconds": 2
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "value": "Sales",
+                                    "activities": [
+                                        {
+                                            "name": "Process_Sales",
+                                            "type": "Wait",
+                                            "dependsOn": [],
+                                            "userProperties": [],
+                                            "typeProperties": {
+                                                "waitTimeInSeconds": 1
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                ],
+                "policy": {
+                    "elapsedTimeMetric": {}
+                },
+                "parameters": {
+                    "TableName": {
+                        "type": "string",
+                        "defaultValue": "Customers"
+                    }
+                },
+                "annotations": [],
+                "lastPublishTime": "2026-11-02T16:05:48Z"
+            },
+            "dependsOn": []
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/PL_wait_Demo')]",
+            "type": "Microsoft.DataFactory/factories/pipelines",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "activities": [
+                    {
+                        "name": "Wait_10_seconds",
+                        "type": "Wait",
+                        "dependsOn": [],
+                        "userProperties": [],
+                        "typeProperties": {
+                            "waitTimeInSeconds": 10
+                        }
+                    }
+                ],
+                "policy": {
+                    "elapsedTimeMetric": {}
+                },
+                "annotations": [],
+                "lastPublishTime": "2026-11-02T16:09:18Z"
+            },
+            "dependsOn": []
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/PL_Untill_Demo')]",
+            "type": "Microsoft.DataFactory/factories/pipelines",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "activities": [
+                    {
+                        "name": "Repeat_Until_5",
+                        "type": "Until",
+                        "dependsOn": [],
+                        "userProperties": [],
+                        "typeProperties": {
+                            "expression": {
+                                "value": "@greaterOrEquals(variables('Counter'), 5)",
+                                "type": "Expression"
+                            },
+                            "activities": [
+                                {
+                                    "name": "Calculate_Next_Counter",
+                                    "type": "SetVariable",
+                                    "dependsOn": [],
+                                    "policy": {
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "variableName": "NextCounter",
+                                        "value": {
+                                            "value": "@add(variables('Counter'), 1)\n",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                },
+                                {
+                                    "name": "Update_Counter",
+                                    "type": "SetVariable",
+                                    "dependsOn": [
+                                        {
+                                            "activity": "Calculate_Next_Counter",
+                                            "dependencyConditions": [
+                                                "Succeeded"
+                                            ]
+                                        }
+                                    ],
+                                    "policy": {
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "variableName": "Counter",
+                                        "value": {
+                                            "value": "@variables('NextCounter')",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                }
+                            ],
+                            "timeout": "0.12:00:00"
+                        }
+                    }
+                ],
+                "policy": {
+                    "elapsedTimeMetric": {}
+                },
+                "variables": {
+                    "Counter": {
+                        "type": "Integer",
+                        "defaultValue": 0
+                    },
+                    "NextCounter": {
+                        "type": "Integer",
+                        "defaultValue": 0
+                    }
+                },
+                "annotations": [],
+                "lastPublishTime": "2026-11-02T16:19:16Z"
+            },
+            "dependsOn": []
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/PL_Filter_Demo')]",
+            "type": "Microsoft.DataFactory/factories/pipelines",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "activities": [
+                    {
+                        "name": "Filter_CSV_Files",
+                        "type": "Filter",
+                        "dependsOn": [],
+                        "userProperties": [],
+                        "typeProperties": {
+                            "items": {
+                                "value": "@pipeline().parameters.FileNames",
+                                "type": "Expression"
+                            },
+                            "condition": {
+                                "value": "@endswith(item(), '.csv' )",
+                                "type": "Expression"
+                            }
+                        }
+                    }
+                ],
+                "policy": {
+                    "elapsedTimeMetric": {}
+                },
+                "parameters": {
+                    "FileNames": {
+                        "type": "array",
+                        "defaultValue": [
+                            "customers.csv",
+                            "employees.csv",
+                            "sales.json",
+                            "notes.txt",
+                            "products.csv"
+                        ]
+                    }
+                },
+                "annotations": [],
+                "lastPublishTime": "2026-11-02T16:30:56Z"
+            },
+            "dependsOn": []
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/PL_Web_API_Demo')]",
+            "type": "Microsoft.DataFactory/factories/pipelines",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "activities": [
+                    {
+                        "name": "Get_User_Details",
+                        "type": "WebActivity",
+                        "dependsOn": [],
+                        "policy": {
+                            "timeout": "0.12:00:00",
+                            "retry": 0,
+                            "retryIntervalInSeconds": 30,
+                            "secureOutput": false,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "method": "GET",
+                            "headers": {},
+                            "url": "https://jsonplaceholder.typicode.com/users/1"
+                        }
+                    },
+                    {
+                        "name": "Store_User_Name",
+                        "type": "SetVariable",
+                        "dependsOn": [
+                            {
+                                "activity": "Get_User_Details",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            }
+                        ],
+                        "policy": {
+                            "secureOutput": false,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "variableName": "UserName",
+                            "value": {
+                                "value": "@activity('Get_User_Details').output.name",
+                                "type": "Expression"
+                            }
+                        }
+                    }
+                ],
+                "policy": {
+                    "elapsedTimeMetric": {}
+                },
+                "variables": {
+                    "UserName": {
+                        "type": "String"
+                    }
+                },
+                "annotations": [],
+                "lastPublishTime": "2026-11-03T16:27:46Z"
+            },
+            "dependsOn": []
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/PL_API_Error_Handling')]",
+            "type": "Microsoft.DataFactory/factories/pipelines",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "activities": [
+                    {
+                        "name": "Call_API",
+                        "type": "WebActivity",
+                        "dependsOn": [],
+                        "policy": {
+                            "timeout": "0.12:00:00",
+                            "retry": 2,
+                            "retryIntervalInSeconds": 30,
+                            "secureOutput": false,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "method": "GET",
+                            "headers": {},
+                            "url": "https://jsonplaceholder.typicode.com/invalid-endpoint"
+                        }
+                    },
+                    {
+                        "name": "Handle_API_Failure",
+                        "type": "Wait",
+                        "dependsOn": [
+                            {
+                                "activity": "Call_API",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            }
+                        ],
+                        "userProperties": [],
+                        "typeProperties": {
+                            "waitTimeInSeconds": 2
+                        }
+                    }
+                ],
+                "policy": {
+                    "elapsedTimeMetric": {}
+                },
+                "annotations": [],
+                "lastPublishTime": "2026-11-04T16:25:14Z"
+            },
+            "dependsOn": []
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/LS_ADLS_TRANING')]",
+            "type": "Microsoft.DataFactory/factories/linkedServices",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "annotations": [],
+                "type": "AzureBlobFS",
+                "typeProperties": {
+                    "url": "[parameters('LS_ADLS_TRANING_properties_typeProperties_url')]"
+                }
+            },
+            "dependsOn": []
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/LS_SQL_SERVER')]",
+            "type": "Microsoft.DataFactory/factories/linkedServices",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "annotations": [],
+                "type": "AzureSqlDatabase",
+                "typeProperties": {
+                    "server": "[parameters('LS_SQL_SERVER_properties_typeProperties_server')]",
+                    "database": "[parameters('LS_SQL_SERVER_properties_typeProperties_database')]",
+                    "encrypt": "mandatory",
+                    "trustServerCertificate": false,
+                    "authenticationType": "SQL",
+                    "userName": "[parameters('LS_SQL_SERVER_properties_typeProperties_userName')]",
+                    "password": {
+                        "type": "SecureString",
+                        "value": "[parameters('LS_SQL_SERVER_password')]"
+                    }
+                }
+            },
+            "dependsOn": []
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/LS_REST_Training')]",
+            "type": "Microsoft.DataFactory/factories/linkedServices",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "annotations": [],
+                "type": "RestService",
+                "typeProperties": {
+                    "url": "[parameters('LS_REST_Training_properties_typeProperties_url')]",
+                    "enableServerCertificateValidation": true,
+                    "authenticationType": "Anonymous"
+                }
+            },
+            "dependsOn": []
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/TRG_Storage_CSV_Arrival')]",
+            "type": "Microsoft.DataFactory/factories/triggers",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "annotations": [],
+                "runtimeState": "Stopped",
+                "pipelines": [
+                    {
+                        "pipelineReference": {
+                            "referenceName": "PL_Storage_Event_Demo",
+                            "type": "PipelineReference"
+                        },
+                        "parameters": {
+                            "FileName": "[parameters('TRG_Storage_CSV_Arrival_properties_PL_Storage_Event_Demo_parameters_FileName')]",
+                            "FolderPath": "[parameters('TRG_Storage_CSV_Arrival_properties_PL_Storage_Event_Demo_parameters_FolderPath')]"
+                        }
+                    }
+                ],
+                "type": "BlobEventsTrigger",
+                "typeProperties": {
+                    "blobPathBeginsWith": "/azurelibacademy/blobs/input/",
+                    "blobPathEndsWith": ".csv",
+                    "ignoreEmptyBlobs": true,
+                    "scope": "[parameters('TRG_Storage_CSV_Arrival_properties_typeProperties_scope')]",
+                    "events": [
+                        "Microsoft.Storage.BlobCreated"
+                    ]
+                }
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/pipelines/PL_Storage_Event_Demo')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/trigger')]",
+            "type": "Microsoft.DataFactory/factories/triggers",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "annotations": [],
+                "runtimeState": "Stopped",
+                "pipeline": {
+                    "pipelineReference": {
+                        "referenceName": "PL_TumblingWindow_Demo",
+                        "type": "PipelineReference"
+                    },
+                    "parameters": {
+                        "WindowStart": "[parameters('trigger_properties_pipeline_parameters_WindowStart')]",
+                        "WindowEnd": "[parameters('trigger_properties_pipeline_parameters_WindowEnd')]"
+                    }
+                },
+                "type": "TumblingWindowTrigger",
+                "typeProperties": {
+                    "frequency": "Minute",
+                    "interval": 5,
+                    "startTime": "2026-10-27T17:20:00Z",
+                    "endTime": "2026-10-28T17:15:00Z",
+                    "delay": "00:00:00",
+                    "maxConcurrency": 50,
+                    "retryPolicy": {
+                        "intervalInSeconds": 30
+                    },
+                    "dependsOn": []
+                }
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/pipelines/PL_TumblingWindow_Demo')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/TRG_Custom_Sales_Approved')]",
+            "type": "Microsoft.DataFactory/factories/triggers",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "annotations": [],
+                "runtimeState": "Stopped",
+                "pipelines": [
+                    {
+                        "pipelineReference": {
+                            "referenceName": "PL_Custom_event_Demo",
+                            "type": "PipelineReference"
+                        },
+                        "parameters": {
+                            "dataApprovalID": "[parameters('TRG_Custom_Sales_Approved_properties_PL_Custom_event_Demo_parameters_dataApprovalID')]"
+                        }
+                    }
+                ],
+                "type": "CustomEventsTrigger",
+                "typeProperties": {
+                    "subjectEndsWith": "",
+                    "subjectBeginsWith": "sales/",
+                    "scope": "[parameters('TRG_Custom_Sales_Approved_properties_typeProperties_scope')]",
+                    "events": [
+                        "SalesFileApproved"
+                    ]
+                }
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/pipelines/PL_Custom_event_Demo')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/ds_sales_source')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "LS_ADLS_TRANING",
+                    "type": "LinkedServiceReference"
+                },
+                "parameters": {
+                    "ds_FileName": {
+                        "type": "string",
+                        "defaultValue": "@dataset().ds_FileName"
+                    }
+                },
+                "annotations": [],
+                "type": "DelimitedText",
+                "typeProperties": {
+                    "location": {
+                        "type": "AzureBlobFSLocation",
+                        "fileName": {
+                            "value": "@dataset().ds_FileName",
+                            "type": "Expression"
+                        },
+                        "folderPath": "input",
+                        "fileSystem": "azurelibacademy"
+                    },
+                    "columnDelimiter": ",",
+                    "escapeChar": "\\",
+                    "firstRowAsHeader": true,
+                    "quoteChar": "\""
+                },
+                "schema": []
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/LS_ADLS_TRANING')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/ds_sales_target')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "LS_ADLS_TRANING",
+                    "type": "LinkedServiceReference"
+                },
+                "parameters": {
+                    "ds_FileName": {
+                        "type": "string",
+                        "defaultValue": "@dataset().ds_FileName"
+                    }
+                },
+                "annotations": [],
+                "type": "DelimitedText",
+                "typeProperties": {
+                    "location": {
+                        "type": "AzureBlobFSLocation",
+                        "fileName": {
+                            "value": "@dataset().ds_FileName",
+                            "type": "Expression"
+                        },
+                        "folderPath": "output",
+                        "fileSystem": "azurelibacademy"
+                    },
+                    "columnDelimiter": ",",
+                    "escapeChar": "\\",
+                    "firstRowAsHeader": false,
+                    "quoteChar": null
+                },
+                "schema": []
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/LS_ADLS_TRANING')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/ds_input_folder')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "LS_ADLS_TRANING",
+                    "type": "LinkedServiceReference"
+                },
+                "annotations": [],
+                "type": "DelimitedText",
+                "typeProperties": {
+                    "location": {
+                        "type": "AzureBlobFSLocation"
+                    },
+                    "columnDelimiter": ",",
+                    "escapeChar": "\\",
+                    "firstRowAsHeader": true,
+                    "quoteChar": "\""
+                },
+                "schema": []
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/LS_ADLS_TRANING')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/DS_SQL_SERVER')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "LS_SQL_SERVER",
+                    "type": "LinkedServiceReference"
+                },
+                "annotations": [],
+                "type": "AzureSqlTable",
+                "schema": [
+                    {
+                        "name": "CustomerID",
+                        "type": "int",
+                        "precision": 10
+                    },
+                    {
+                        "name": "CustomerName",
+                        "type": "varchar"
+                    },
+                    {
+                        "name": "Region",
+                        "type": "varchar"
+                    },
+                    {
+                        "name": "Email",
+                        "type": "varchar"
+                    },
+                    {
+                        "name": "ModifiedDate",
+                        "type": "datetime2",
+                        "scale": 7
+                    }
+                ],
+                "typeProperties": {
+                    "schema": "dbo",
+                    "table": "Customers"
+                }
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/LS_SQL_SERVER')]"
+            ]
+        }
+    ]
+}
